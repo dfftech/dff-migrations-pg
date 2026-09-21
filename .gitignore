@@ -6,3 +6,4 @@ node_modules
 /encore.gen
 package-lock.json
 bun.lock
+/.migration
