@@ -4,3 +4,5 @@ encore.gen.cue
 /.encore
 node_modules
 /encore.gen
+package-lock.json
+bun.lock

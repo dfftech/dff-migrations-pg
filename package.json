@@ -7,9 +7,16 @@
   "type": "module",
   "devDependencies": {
     "@types/node": "^20.5.7",
+    "@types/pg": "^8.23.1",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "encore.dev": "^1.58.4"
+    "dff-util": "^1.4.3",
+    "encore.dev": "^1.58.4",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.23.0"
+  },
+  "scripts": {
+    "start": "encore run"
   }
 }
