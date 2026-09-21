@@ -4,9 +4,9 @@ import { Kafka, type Producer } from "kafkajs";
 import { PubSubEventType } from './app-types';
 import { env } from './app-util';
 
-const KAFKA_BROKERS = process.env.DFF_KAFKA_BROKERS || "192.168.1.2:29094";
-const KAFKA_USERNAME = process.env.DFF_KAFKA_USERNAME || "admin";
-const KAFKA_PASSWORD = process.env.DFF_KAFKA_PASSWORD || "DffAdmin224";
+const KAFKA_BROKERS = env("KAFKA_BROKERS") || "192.168.1.2:29094";
+const KAFKA_USERNAME = env("KAFKA_USERNAME") || "admin";
+const KAFKA_PASSWORD = env("KAFKA_PASSWORD") || "DffAdmin224";
 
 let kafkaSingleton: Kafka | null = null;
 let sharedProducer: Producer | null = null;
@@ -15,7 +15,7 @@ let producerConnected = false;
 export function getKafkaClient(): Kafka {
   if (!kafkaSingleton) {
     kafkaSingleton = new Kafka({
-      clientId: process.env.DFF_KAFKA_CLIENT_ID || "encore-app",
+      clientId: env("KAFKA_CLIENT_ID") || "encore-app",
       brokers: [KAFKA_BROKERS],
       ssl: false,
       sasl: {

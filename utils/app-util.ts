@@ -1,7 +1,7 @@
   import { currentRequest, type APICallMeta } from "encore.dev";
 
   export const env_base_name = (type = 'upper') => {
-    const baseName = process.env.BASE_NAME || "DFF";
+    const baseName = process.env.BASE_NAME || "XXXX";
     return baseName.toUpperCase();
   };
 

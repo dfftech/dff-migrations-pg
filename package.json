@@ -1,7 +1,7 @@
 {
   "name": "dff-migrations-pg",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Encore Typescript Starter",
   "license": "MPL-2.0",
   "type": "module",
