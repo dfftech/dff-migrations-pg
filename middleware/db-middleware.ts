@@ -1,44 +1,45 @@
 import { middleware } from "encore.dev/api";
-import {
-  IS_TENANT,
-  get_core_db,
-  get_tenant_db,
-} from "../db/db-connection";
+import { get_core_db, get_tenant_db } from "../db/db-connection";
 
-/** Health uses path /health/:id where :id is the tenant. */
-function tenantFromHealthPath(pathAndQuery?: string): string | undefined {
+function tenantFromPath(pathAndQuery?: string): string | undefined {
   if (!pathAndQuery) return undefined;
   const path = pathAndQuery.split("?")[0] ?? "";
-  const match = path.match(/^\/health\/([^/]+)$/);
-  return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+
+  const health = path.match(/^\/health\/([^/]+)$/);
+  if (health?.[1]) return decodeURIComponent(health[1]);
+
+  const zOrder = path.match(/^\/migration\/(?:promote|rollback)\/z-order\/([^/]+)$/);
+  if (zOrder?.[1]) return decodeURIComponent(zOrder[1]);
+
+  const versionTenant = path.match(
+    /^\/migration\/(?:promote|rollback)\/[^/]+\/([^/]+)$/
+  );
+  if (versionTenant?.[1]) return decodeURIComponent(versionTenant[1]);
+
+  return undefined;
+}
+
+async function dbFor(tenant?: string) {
+  if (!tenant) return get_core_db();
+  try {
+    return await get_tenant_db(tenant);
+  } catch {
+    return get_core_db();
+  }
 }
 
 /**
- * Attaches pg Pools as session_db (and core_db when multi-tenant).
- * IS_TENANT is set once at load time in encore.service via init_tenants_db().
- * Tenant source: x-tenant-id header, or /health/:id path param for health only.
+ * Attaches pg Pools. Does not require x-tenant-id or IS_TENANT.
+ * Tenant is taken from the URL when present (/health/:id or /migration/.../:tenant).
  */
 export const TenantMiddleware = middleware(async (req, next) => {
-  if (IS_TENANT) {
-    const callMeta = req.requestMeta as {
-      headers?: Record<string, string>;
-      pathAndQuery?: string;
-    };
-    const tenant =
-      callMeta?.headers?.["x-tenant-id"] ||
-      tenantFromHealthPath(callMeta?.pathAndQuery);
+  const callMeta = req.requestMeta as { pathAndQuery?: string };
+  const tenant = tenantFromPath(callMeta?.pathAndQuery);
 
-    if (!tenant) throw new Error("Missing tenant header (x-tenant-id)");
-
-    req.data.tenant_id = tenant;
-    req.data.core_db = get_core_db();
-    req.data.session_db = await get_tenant_db(tenant);
-    req.data.get_db = async (key: string) => get_tenant_db(key);
-  } else {
-    req.data.core_db = get_core_db();
-    req.data.session_db = get_core_db();
-    req.data.get_db = async (_key: string) => get_core_db();
-  }
+  req.data.core_db = get_core_db();
+  req.data.get_db = async (key: string) => dbFor(key);
+  if (tenant) req.data.tenant_id = tenant;
+  req.data.session_db = await dbFor(tenant);
 
   return next(req);
 });

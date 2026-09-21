@@ -151,7 +151,7 @@ export async function getOrCreateTenantPool(tenantId: string): Promise<Pool> {
  * - recreate pool when db URL changed
  * - remove pools for inactive / deleted tenants
  */
-export async function syncTenantPools(): Promise<void> {
+export async function syncTenantPools(): Promise<string[]> {
   console.log("[db] syncing tenant pools from registry...");
 
   let nextMap: Record<string, string>;
@@ -162,7 +162,9 @@ export async function syncTenantPools(): Promise<void> {
     throw err;
   }
 
+  const prevIds = new Set(tenantUrlMap.keys());
   const nextIds = new Set(Object.keys(nextMap));
+  const added: string[] = [];
 
   for (const tenantId of Array.from(tenantPools.keys())) {
     if (!nextIds.has(tenantId)) {
@@ -171,6 +173,7 @@ export async function syncTenantPools(): Promise<void> {
   }
 
   for (const [tenantId, rawConnectionUrl] of Object.entries(nextMap)) {
+    const isNew = !prevIds.has(tenantId);
     const prevUrl = tenantUrlMap.get(tenantId);
     if (prevUrl === rawConnectionUrl && tenantPools.has(tenantId)) continue;
 
@@ -178,14 +181,17 @@ export async function syncTenantPools(): Promise<void> {
       await removeTenantPool(tenantId);
     }
     await createAndCacheTenantPool(tenantId, rawConnectionUrl);
+    if (isNew) added.push(tenantId);
   }
 
   console.log(
     "[db] tenant sync done, count:",
     tenantPools.size,
     "ids:",
-    tenantPools.size ? Array.from(tenantPools.keys()).join(", ") : "(none)"
+    tenantPools.size ? Array.from(tenantPools.keys()).join(", ") : "(none)",
+    added.length ? `added: ${added.join(", ")}` : ""
   );
+  return added;
 }
 
 /** Warm all tenant pools from the registry (same as sync). */

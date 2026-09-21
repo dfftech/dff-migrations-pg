@@ -109,8 +109,16 @@ async function startTenantChangeListener(): Promise<void> {
   client.on("notification", (msg) => {
     if (msg.channel !== CHANNEL) return;
     console.log("[db-event] tenants table changed:", safeNotifySummary(msg.payload));
-    void syncTenantPools().catch((err) => {
-      console.error("[db-event] syncTenantPools failed:", err);
+    void (async () => {
+      const added = await syncTenantPools();
+      if (added.length === 0) return;
+      const { promoteZOrder } = await import("../migration-runner");
+      for (const tenantId of added) {
+        console.log("[db-event] new tenant, promote z-order:", tenantId);
+        await promoteZOrder(tenantId);
+      }
+    })().catch((err) => {
+      console.error("[db-event] tenant change handler failed:", err);
     });
   });
 

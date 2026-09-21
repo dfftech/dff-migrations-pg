@@ -56,22 +56,79 @@ function serverSessionId(): string | undefined {
 }
 
 let clonePromise: Promise<void> | null = null;
+let pullPromise: Promise<void> | null = null;
+
+function repoAuth() {
+  const repoUrl = env("REPO_URL")?.trim();
+  const token = env("REPO_TOKEN")?.trim();
+  if (!repoUrl) return null;
+  if (!token) throw new Error("REPO_TOKEN is not set");
+  return { repoUrl, token };
+}
+
+async function overwriteFromRemote(repoUrl: string, token: string): Promise<void> {
+  console.log("[migration] fetch --force", publicRepoUrl(repoUrl), `branch=${BRANCH}`);
+  await git.fetch({
+    fs,
+    http,
+    dir: MIGRATION_DIR,
+    url: repoUrl,
+    remote: "origin",
+    ref: BRANCH,
+    singleBranch: true,
+    depth: 1,
+    onAuth: () => onAuth(repoUrl, token),
+  });
+
+  const remoteRef = `refs/remotes/origin/${BRANCH}`;
+  const oid = await git.resolveRef({ fs, dir: MIGRATION_DIR, ref: remoteRef });
+  await git.writeRef({
+    fs,
+    dir: MIGRATION_DIR,
+    ref: `refs/heads/${BRANCH}`,
+    value: oid,
+    force: true,
+  });
+  await git.checkout({
+    fs,
+    dir: MIGRATION_DIR,
+    ref: BRANCH,
+    force: true,
+  });
+  console.log("[migration] reset --hard origin/" + BRANCH, oid.slice(0, 8));
+}
+
+/** Fetch origin and overwrite local .migration with remote HEAD. */
+export function pull_repo(): Promise<void> {
+  if (pullPromise) return pullPromise;
+
+  pullPromise = (async () => {
+    await clone_repo();
+    const auth = repoAuth();
+    if (!auth) return;
+    if (!(await pathExists(join(MIGRATION_DIR, ".git")))) {
+      console.warn("[migration] skip pull: clone missing");
+      return;
+    }
+    await overwriteFromRemote(auth.repoUrl, auth.token);
+  })().finally(() => {
+    pullPromise = null;
+  });
+
+  return pullPromise;
+}
 
 /** Clone REPO_URL (main) into ./.migration using REPO_TOKEN via isomorphic-git. */
 export function clone_repo(): Promise<void> {
   if (clonePromise) return clonePromise;
 
   clonePromise = (async () => {
-    const repoUrl = env("REPO_URL")?.trim();
-    const token = env("REPO_TOKEN")?.trim();
-
-    if (!repoUrl) {
+    const auth = repoAuth();
+    if (!auth) {
       console.warn("[migration] skip clone: REPO_URL not set");
       return;
     }
-    if (!token) {
-      throw new Error("REPO_TOKEN is not set");
-    }
+    const { repoUrl, token } = auth;
 
     if (await pathExists(LEGACY_MIGRATION_DIR)) {
       await rm(LEGACY_MIGRATION_DIR, { recursive: true, force: true });
