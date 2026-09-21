@@ -1,0 +1,20 @@
+### Health
+GET http://localhost:4000/health/public
+
+### Promote version (all / default schema)
+GET http://localhost:4000/migration/promote/0001
+
+### Promote z-order
+GET http://localhost:4000/migration/promote/z-order/public
+
+### Promote version + schema
+GET http://localhost:4000/migration/promote/0001/public
+
+### Rollback version (all / default schema)
+GET http://localhost:4000/migration/rollback/0001
+
+### Rollback z-order
+GET http://localhost:4000/migration/rollback/z-order/public
+
+### Rollback version + schema
+GET http://localhost:4000/migration/rollback/0001/public
