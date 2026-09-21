@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { MIGRATION_DIR } from "../utils/clone-repo";
+import { mlog, type MigrationLog } from "./log";
 
 export type MigrationAction = "promote" | "rollback";
 export const Z_ORDER = "z-order";
@@ -62,19 +63,23 @@ export function listVersions(): string[] {
 }
 
 /** Top-level .migration/z-order.yaml — version folder order. */
-export function loadTopVersionOrder(action: MigrationAction): string[] {
+export function loadTopVersionOrder(
+  action: MigrationAction,
+  ctx?: MigrationLog
+): string[] {
   const path = join(MIGRATION_DIR, "z-order.yaml");
   if (!existsSync(path)) {
     throw new Error(`[migration] missing top-level ${path}`);
   }
 
   const versions = readYamlList(path).map(assertVersion);
+  mlog({ action, ...ctx }, `top z-order.yaml ${versions.join(" → ")}`);
   const missing = versions.filter(
     (v) => !existsSync(join(MIGRATION_DIR, v, action, "z-order.yaml"))
   );
   if (missing.length) {
     throw new Error(
-      `[migration] top z-order.yaml lists versions with no ${action}/z-order.yaml: ${missing.join(", ")}`
+      `[migration] ${action} top z-order.yaml lists versions with no ${action}/z-order.yaml: ${missing.join(", ")}`
     );
   }
   return versions;
@@ -85,15 +90,24 @@ export function versionActionDir(version: string, action: MigrationAction): stri
 }
 
 /** Per-version .migration/{version}/{action}/z-order.yaml — SQL file order. */
-export function loadSqlOrder(version: string, action: MigrationAction): string[] {
+export function loadSqlOrder(
+  version: string,
+  action: MigrationAction,
+  ctx?: MigrationLog
+): string[] {
   const dir = versionActionDir(version, action);
   const orderPath = join(dir, "z-order.yaml");
   try {
-    return readYamlList(orderPath);
+    const names = readYamlList(orderPath);
+    mlog(
+      { action, version, ...ctx },
+      `file order ${names.join(" → ")}`
+    );
+    return names;
   } catch {
     const available = listVersions();
     throw new Error(
-      `[migration] missing ${orderPath}` +
+      `[migration] ${action} version=${version} missing ${orderPath}` +
         (available.length ? ` (versions: ${available.join(", ")})` : "")
     );
   }

@@ -1,5 +1,6 @@
 import { APP_SCHEMA, CORE_URL } from "./db-url";
 import { initTenantEvents, stopTenantEvents } from "./db-event";
+import { setMigrationLogKind } from "../migration-runner/log";
 import {
   closeAllPools,
   getCorePool,
@@ -91,6 +92,7 @@ export function init_tenants_db(): Promise<void> {
       await pingCoreDb();
 
       IS_TENANT = await detectMultiTenant();
+      setMigrationLogKind(IS_TENANT ? "tenant" : "schema");
 
       if (IS_TENANT) {
         await refreshTenantPools();

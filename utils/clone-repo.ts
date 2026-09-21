@@ -105,7 +105,10 @@ export function pull_repo(): Promise<void> {
   pullPromise = (async () => {
     await clone_repo();
     const auth = repoAuth();
-    if (!auth) return;
+    if (!auth) {
+      console.warn("[migration] skip pull: REPO_URL not set");
+      return;
+    }
     if (!(await pathExists(join(MIGRATION_DIR, ".git")))) {
       console.warn("[migration] skip pull: clone missing");
       return;

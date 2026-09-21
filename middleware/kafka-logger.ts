@@ -3,7 +3,7 @@ import {
   connectKafkaProducer,
   kafkaPublish
 } from "../utils/kafka-util";
-import { env } from "../utils/app-util";
+import { env, session_meta } from "../utils/app-util";
 import { maskLogData } from "../utils/log-mask";
 
 const KAFKA_LOG_TOPIC = env("KAFKA_LOG_TOPIC") || "app-logs";
@@ -80,4 +80,31 @@ export function createKafkaLogger(
     warn: createMethod("warn"),
     debug: createMethod("debug"),
   };
+}
+
+export type AppLogger = ReturnType<typeof createKafkaLogger>;
+
+let backgroundLogger: AppLogger | null = null;
+
+/** Same logger as middleware: request-scoped, or a shared fallback outside a request. */
+export function currentAppLogger(): AppLogger {
+  try {
+    const { logger } = session_meta();
+    if (logger && typeof logger.info === "function") return logger as AppLogger;
+  } catch {
+    // LISTEN / init paths have no current request
+  }
+  if (!backgroundLogger) {
+    backgroundLogger = createKafkaLogger("migration");
+  }
+  return backgroundLogger;
+}
+
+/** Same path as other logs: Encore log always; Kafka only when KAFKA_LOG_SEND is enabled. */
+export function emitAppLog(
+  level: "info" | "error" | "warn" | "debug",
+  message: string,
+  data: Record<string, unknown> = {}
+): void {
+  void currentAppLogger()[level](message, data);
 }

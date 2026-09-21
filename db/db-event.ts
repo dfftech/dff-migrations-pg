@@ -1,6 +1,7 @@
 import { Client } from "pg";
 import { APP_SCHEMA, CORE_URL } from "./db-url";
 import { getCorePool, syncTenantPools } from "./db-pool";
+import { merr, mlog } from "../migration-runner/log";
 
 const CHANNEL = "tenant_change";
 const TRIGGER_NAME = "tenants_notify_trigger";
@@ -111,14 +112,18 @@ async function startTenantChangeListener(): Promise<void> {
     console.log("[db-event] tenants table changed:", safeNotifySummary(msg.payload));
     void (async () => {
       const added = await syncTenantPools();
-      if (added.length === 0) return;
+      if (added.length === 0) {
+        mlog({ action: "promote", version: "z-order" }, "tenant change: no new tenants");
+        return;
+      }
       const { promoteZOrder } = await import("../migration-runner");
       for (const tenantId of added) {
-        console.log("[db-event] new tenant, promote z-order:", tenantId);
+        mlog({ action: "promote", version: "z-order", tenant: tenantId, phase: "begin" });
         await promoteZOrder(tenantId);
+        mlog({ action: "promote", version: "z-order", tenant: tenantId, phase: "end" });
       }
     })().catch((err) => {
-      console.error("[db-event] tenant change handler failed:", err);
+      merr({ action: "promote", version: "z-order", phase: "fail" }, "tenant change handler failed", err);
     });
   });
 
