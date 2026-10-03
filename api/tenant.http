@@ -1,6 +1,9 @@
 ### Health
 GET http://localhost:4000/health/local
 
+###
+GET http://localhost:4000/migration/promote/core-0000/core
+
 ### Promote version (all tenants)
 GET http://localhost:4000/migration/promote/Test-0001
 

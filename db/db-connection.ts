@@ -16,18 +16,27 @@ import {
  */
 export let IS_TENANT = false;
 
+/** Reserved tenant id: always served by the base DB (DB_URL); tenants table is not read. */
+export const CORE_TENANT_ID = "core";
+
+export function is_core_tenant(tenantId?: string): boolean {
+  return String(tenantId ?? "").trim().toLowerCase() === CORE_TENANT_ID;
+}
+
 /** pg Pool for the primary DB (registry / single-tenant DB). */
 export function get_core_db() {
   return getCorePool();
 }
 
-/** pg Pool for a tenant (multi-tenant only). */
+/** pg Pool for a tenant (multi-tenant only). No tenants table → core DB only. */
 export async function get_tenant_db(tenantId: string) {
+  if (is_core_tenant(tenantId) || !IS_TENANT) return get_core_db();
   return getOrCreateTenantPool(tenantId);
 }
 
-/** Raw pg Pool for a tenant (multi-tenant only). */
+/** Raw pg Pool for a tenant (multi-tenant only). No tenants table → core DB only. */
 export async function get_tenant_pool(tenantId: string) {
+  if (is_core_tenant(tenantId) || !IS_TENANT) return getCorePool();
   return getOrCreateTenantPool(tenantId);
 }
 

@@ -131,6 +131,10 @@ async function removeTenantPool(tenantId: string): Promise<void> {
 
 /** Return cached tenant pool, or create and cache one from the registry. */
 export async function getOrCreateTenantPool(tenantId: string): Promise<Pool> {
+  if (String(tenantId ?? "").trim().toLowerCase() === "core") {
+    return getCorePool();
+  }
+
   const cached = tenantPools.get(tenantId);
   if (cached) return cached;
 
@@ -160,6 +164,11 @@ export async function syncTenantPools(): Promise<string[]> {
   } catch (err) {
     console.error("[db] loadTenantMap failed:", err);
     throw err;
+  }
+
+  // "core" is reserved: always served by the base DB (DB_URL), never pooled from the registry.
+  for (const id of Object.keys(nextMap)) {
+    if (id.trim().toLowerCase() === "core") delete nextMap[id];
   }
 
   const prevIds = new Set(tenantUrlMap.keys());
