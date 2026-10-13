@@ -1,45 +1,49 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { api } from "encore.dev/api";
-import { RequestQueryType, ResponseType } from "../../utils/app-types";
-import { session_meta } from "../../utils/app-util";
+import type { RequestByIdType, ResponseType } from 'dff-util';
+import { api } from 'encore.dev/api';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { session_meta } from '../../utils/app-util';
 
 function appVersion(): string {
   try {
-    const pkg = JSON.parse(
-      readFileSync(join(process.cwd(), "package.json"), "utf8")
-    ) as { version?: string };
-    return pkg.version ?? "unknown";
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')) as { version?: string };
+    return pkg.version ?? 'unknown';
   } catch {
-    return "unknown";
+    return 'unknown';
   }
 }
 
 const version = appVersion();
 
-
-export const HealthCheck = api<RequestQueryType, ResponseType>(
+export const HealthCheck = api<RequestByIdType, ResponseType>(
   {
     expose: true,
-    method: "GET",
-    path: "/health/:id",
+    method: 'GET',
+    path: '/health/:id',
   },
-  async (params: RequestQueryType) => {
-    const tenant = String(params.id);
-    const { logger } = session_meta();
-    await logger.info("Processing health request", {
-      tenant,
-      version,
-      query: params.query,
-    });
-    return {
-      status: 200,
-      data: {
-        message: "Health Check Pass",
+  async (params: RequestByIdType) => {
+    const { logger, request_id } = session_meta();
+    try {
+      const tenant = String(params.id);
+      await logger.info('Processing health request', {
         tenant,
         version,
-        query: params.query ? { query: params.query } : undefined,
-      },
-    };
+      });
+      return {
+        status: 200,
+        data: {
+          message: 'Health Check Pass',
+          tenant,
+          version,
+        },
+        meta: { requestId: request_id, timestamp: new Date().toISOString() },
+      };
+    } catch (err) {
+      return {
+        status: 500,
+        error: { message: err instanceof Error ? err.message : String(err) },
+        meta: { requestId: request_id, timestamp: new Date().toISOString() },
+      };
+    }
   }
 );

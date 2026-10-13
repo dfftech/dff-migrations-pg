@@ -1,4 +1,5 @@
 import log from "encore.dev/log";
+import type { KeyValueType } from "dff-util";
 import {
   connectKafkaProducer,
   kafkaPublish
@@ -45,7 +46,7 @@ export function createKafkaLogger(
     session_user_id: sessionUserId,
   });
 
-  async function sendToKafka(level: string, message: string, data: any) {
+  async function sendToKafka(level: string, message: string, data: KeyValueType) {
     if (!isKafkaConnected) return false;
 
     try {
@@ -66,8 +67,8 @@ export function createKafkaLogger(
   }
 
   function createMethod(level: "info" | "error" | "warn" | "debug") {
-    return async (message: string, data: Record<string, any> = {}) => {
-      const safe = maskLogData(data) as Record<string, any>;
+    return async (message: string, data: KeyValueType = {}) => {
+      const safe = maskLogData(data) as KeyValueType;
       const context = { ...baseContext, ...safe };
       fallbackLogger[level](message, context);
       await sendToKafka(level, message, safe);

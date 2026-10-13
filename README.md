@@ -14,15 +14,14 @@ echo $CORE_DB_URL
 # :id is the tenant (works for single- and multi-tenant)
 curl -s http://localhost:4000/health/local
 
-# Single DB (no tenants table) — last path segment is schema
-curl -s http://localhost:4000/migration/promote/0001
-curl -s http://localhost:4000/migration/promote/0001/public
-curl -s http://localhost:4000/migration/promote/z-order/public
-curl -s http://localhost:4000/migration/rollback/z-order/public
+# Admin (.migration/admin) — always the core DB
+curl -s http://localhost:4000/migration/admin/promote/0001
+curl -s http://localhost:4000/migration/admin/promote/0001/core
+curl -s http://localhost:4000/migration/admin/promote/z-order/core
 
-# Multi-tenant (tenants table exists) — last path segment is tenant id
-curl -s http://localhost:4000/migration/promote/0001
-curl -s http://localhost:4000/migration/promote/0001/local
-curl -s http://localhost:4000/migration/promote/z-order/local
-curl -s http://localhost:4000/migration/rollback/z-order/local
+# Tenants (.migration/tenants) — all tenants, or one tenant
+curl -s http://localhost:4000/migration/tenants/promote/0003
+curl -s http://localhost:4000/migration/tenants/promote/0003/local
+curl -s http://localhost:4000/migration/tenants/promote/z-order/local
+curl -s http://localhost:4000/migration/tenants/rollback/z-order/local
 ```

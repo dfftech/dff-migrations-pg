@@ -1,4 +1,5 @@
   import { currentRequest, type APICallMeta } from "encore.dev";
+  import type { SessionInfo } from "dff-util";
 
   export const env_base_name = (type = 'upper') => {
     const baseName = process.env.BASE_NAME || "XXXX";
@@ -14,7 +15,7 @@
     const callMeta = currentRequest() as APICallMeta;
     return {
       logger: callMeta.middlewareData?.logger || {},
-      session_user: callMeta.middlewareData?.session_user || { id: "unknown" },
+      session_user: (callMeta.middlewareData?.session_user || { id: "unknown" }) as SessionInfo,
       request_id: callMeta.middlewareData?.request_id || "-",
       token: callMeta.middlewareData?.token || undefined,
       tenant_id: callMeta.middlewareData?.tenant_id || undefined,
@@ -26,9 +27,9 @@
     return callMeta.middlewareData?.logger || {};
   };
 
-  export const session_user: any = () => {
+  export const session_user = (): SessionInfo => {
     const callMeta = currentRequest() as APICallMeta;
-    return callMeta.middlewareData?.session_user || { id: "unknown" };
+    return (callMeta.middlewareData?.session_user || { id: "unknown" }) as SessionInfo;
   };
 
   export const request_id = () => {

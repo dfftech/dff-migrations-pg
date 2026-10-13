@@ -8,11 +8,13 @@ function tenantFromPath(pathAndQuery?: string): string | undefined {
   const health = path.match(/^\/health\/([^/]+)$/);
   if (health?.[1]) return decodeURIComponent(health[1]);
 
-  const zOrder = path.match(/^\/migration\/(?:promote|rollback)\/z-order\/([^/]+)$/);
+  const zOrder = path.match(
+    /^\/migration\/(?:admin|tenants)\/(?:promote|rollback)\/z-order\/([^/]+)$/
+  );
   if (zOrder?.[1]) return decodeURIComponent(zOrder[1]);
 
   const versionTenant = path.match(
-    /^\/migration\/(?:promote|rollback)\/[^/]+\/([^/]+)$/
+    /^\/migration\/(?:admin|tenants)\/(?:promote|rollback)\/[^/]+\/([^/]+)$/
   );
   if (versionTenant?.[1]) return decodeURIComponent(versionTenant[1]);
 

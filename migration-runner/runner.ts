@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import {
   type MigrationAction,
+  type MigrationTrack,
   loadSqlOrder,
   readSqlFile,
   versionActionDir,
@@ -16,6 +17,7 @@ export type RunCtx = {
   version?: string;
   tenant?: string;
   schema?: string;
+  track?: MigrationTrack;
 };
 
 async function ensureSearchPathSchema(
@@ -49,11 +51,12 @@ export async function runMigrationOnPool(
   version: string,
   action: MigrationAction,
   tenant?: string,
-  schema?: string
+  schema?: string,
+  track: MigrationTrack = "tenants"
 ): Promise<{ version: string; action: MigrationAction; files: string[] }> {
-  const ctx: RunCtx = { action, version, tenant, schema };
-  const order = loadSqlOrder(version, action, ctx);
-  const dir = versionActionDir(version, action);
+  const ctx: RunCtx = { action, version, tenant, schema, track };
+  const order = loadSqlOrder(track, version, action, ctx);
+  const dir = versionActionDir(track, version, action);
   mlog(ctx, `version begin files=${order.length} dir=${dir}`);
 
   const resolved = await ensureSearchPathSchema(pool, ctx, schema);
@@ -66,7 +69,7 @@ export async function runMigrationOnPool(
     await client.query(`SET search_path TO ${quoteIdent(resolved)}`);
     for (const name of order) {
       currentFile = `${name}.sql`;
-      const sql = readSqlFile(version, action, name);
+      const sql = readSqlFile(track, version, action, name);
       if (!sql.trim()) {
         mlog({ ...ctx, file: currentFile, phase: "skip" }, "empty");
         continue;
@@ -103,14 +106,15 @@ export async function runVersionsOnPool(
   versions: string[],
   action: MigrationAction,
   tenant?: string,
-  schema?: string
+  schema?: string,
+  track: MigrationTrack = "tenants"
 ) {
-  const ctx: RunCtx = { action, tenant, schema };
+  const ctx: RunCtx = { action, tenant, schema, track };
   mlog(ctx, `versions begin ${versions.join(" → ")}`);
   const results = [];
   for (const version of versions) {
     results.push(
-      await runMigrationOnPool(pool, version, action, tenant, schema)
+      await runMigrationOnPool(pool, version, action, tenant, schema, track)
     );
   }
   mlog(ctx, "versions end");

@@ -64,6 +64,9 @@ export const LoggingMiddleware = middleware(async (req, next) => {
     await logger.info(
       "Completed request duration(sec): " + ((Date.now() - startTime) / 1000)
     );
-    throw APIError.unknown(err.message || err);
+    const message = err instanceof Error ? err.message : String(err ?? "unknown error");
+    const cause = err instanceof Error ? err : undefined;
+    const apiErr = err instanceof APIError ? err : APIError.unknown(message, cause);
+    throw apiErr.withDetails({ ...(apiErr.details ?? {}), requestId });
   }
 });

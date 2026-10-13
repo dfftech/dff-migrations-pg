@@ -6,6 +6,7 @@ export type MigrationLog = {
   version?: string;
   tenant?: string;
   schema?: string;
+  track?: string;
   file?: string;
   phase?: "begin" | "end" | "fail" | "skip";
 };
@@ -46,6 +47,7 @@ function payload(ctx: MigrationLog, rest: unknown[]): Record<string, unknown> {
     version: ctx.version,
     tenant: ctx.tenant,
     schema: ctx.schema,
+    track: ctx.track,
     target: targetName(ctx),
     file: ctx.file,
     phase: ctx.phase,

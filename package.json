@@ -1,7 +1,7 @@
 {
   "name": "dff-migrations-pg",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Encore Typescript Starter",
   "license": "MPL-2.0",
   "type": "module",
@@ -11,7 +11,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "dff-util": "^1.4.3",
+    "dff-util": "^1.4.4",
     "encore.dev": "1.58.4",
     "isomorphic-git": "^1.42.2",
     "kafkajs": "^2.2.4",

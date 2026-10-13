@@ -1,0 +1,5 @@
+# Health
+curl -sS "http://localhost:4000/health/local" | jq
+
+# Health (core)
+curl -sS "http://localhost:4000/health/core" | jq
