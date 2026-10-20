@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { IS_TENANT, is_core_tenant } from "../db/db-connection";
+import { is_core_tenant, IS_TENANT } from '../db/db-connection';
 import { MIGRATION_DIR } from "../utils/clone-repo";
 import { mlog, type MigrationLog } from "./log";
 
@@ -65,8 +65,23 @@ function assertVersion(version: string): string {
   return name;
 }
 
+/** Physical folder name on disk for a track (repo uses "core", not "admin"). */
+const TRACK_FOLDER: Record<MigrationTrack, string> = {
+  admin: "core",
+  tenants: "tenants",
+};
+
+/** Folder names reserved by the two known tracks — everything else under
+ * MIGRATION_DIR is treated as a per-tenant override folder (e.g. "local",
+ * "botnbolt", "dtf"). */
+const RESERVED_FOLDERS = new Set(Object.values(TRACK_FOLDER));
+
 function trackDir(track: MigrationTrack): string {
-  return join(MIGRATION_DIR, track);
+  return join(MIGRATION_DIR, TRACK_FOLDER[track] ?? track);
+}
+
+function folderDir(folder: string): string {
+  return join(MIGRATION_DIR, folder);
 }
 
 function hasActionDir(dir: string, action?: MigrationAction): boolean {
@@ -79,11 +94,11 @@ function hasActionDir(dir: string, action?: MigrationAction): boolean {
   }
 }
 
-export function listVersions(track: MigrationTrack): string[] {
+function listVersionsInDir(dir: string): string[] {
   try {
-    return readdirSync(trackDir(track), { withFileTypes: true })
-      .filter((d) => d.isDirectory() && !d.name.startsWith("."))
-      .filter((d) => hasActionDir(join(trackDir(track), d.name)))
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+      .filter((d) => hasActionDir(join(dir, d.name)))
       .map((d) => d.name)
       .sort();
   } catch {
@@ -91,12 +106,68 @@ export function listVersions(track: MigrationTrack): string[] {
   }
 }
 
-function versionHasAction(
-  track: MigrationTrack,
-  version: string,
-  action: MigrationAction
-): boolean {
-  return existsSync(join(trackDir(track), version, action, "z-order.yaml"));
+export function listVersions(track: MigrationTrack): string[] {
+  return listVersionsInDir(trackDir(track));
+}
+
+function versionHasActionInDir(dir: string, version: string, action: MigrationAction): boolean {
+  return existsSync(join(dir, version, action, 'z-order.yaml'));
+}
+
+function versionHasAction(track: MigrationTrack, version: string, action: MigrationAction): boolean {
+  return versionHasActionInDir(trackDir(track), version, action);
+}
+
+function dirHasZOrderFile(dir: string): boolean {
+  return existsSync(join(dir, 'z-order.yaml')) || existsSync(join(MIGRATION_DIR, 'z-order.yaml'));
+}
+
+function trackHasZOrderFile(track: MigrationTrack): boolean {
+  return dirHasZOrderFile(trackDir(track));
+}
+
+function catalogForDir(dir: string): { versions: string[]; actions: MigrationAction[] } {
+  const versions = listVersionsInDir(dir);
+  const actions = (['promote', 'rollback'] as MigrationAction[]).filter((action) =>
+    versions.some((v) => versionHasActionInDir(dir, v, action))
+  );
+  if (actions.length > 0 && dirHasZOrderFile(dir)) {
+    versions.push(Z_ORDER);
+  }
+  return { versions, actions };
+}
+
+/**
+ * Folder-driven catalog for a track: every version folder present, which of
+ * promote/rollback have at least one version supporting them, and whether
+ * "z-order" can be used (top-level z-order.yaml for the track or repo root).
+ */
+export function catalogForTrack(track: MigrationTrack): { versions: string[]; actions: MigrationAction[] } {
+  return catalogForDir(trackDir(track));
+}
+
+/**
+ * Folder-driven catalog for an arbitrary per-tenant override folder (e.g.
+ * "local", "botnbolt", "dtf") that lives alongside "core"/"tenants" at the
+ * repo root but isn't one of the two known tracks.
+ */
+export function catalogForFolder(folder: string): { versions: string[]; actions: MigrationAction[] } {
+  return catalogForDir(folderDir(folder));
+}
+
+/**
+ * Top-level folder names under MIGRATION_DIR that aren't the reserved
+ * "core"/"tenants" track folders — these are per-tenant override folders.
+ */
+export function listExtraFolders(): string[] {
+  try {
+    return readdirSync(MIGRATION_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith('.') && !RESERVED_FOLDERS.has(d.name))
+      .map((d) => d.name)
+      .sort();
+  } catch {
+    return [];
+  }
 }
 
 /** Track (or root) z-order.yaml — version folder order for that track. */

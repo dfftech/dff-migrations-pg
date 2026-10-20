@@ -1,26 +1,38 @@
 # Rollback tenants version (all tenants)
-curl -sS "http://localhost:4000/migration/tenants/rollback/0000" | jq
+curl -sS "http://localhost:4000/migration/tenants/0000/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0001" | jq
+curl -sS "http://localhost:4000/migration/tenants/0001/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0002" | jq
+curl -sS "http://localhost:4000/migration/tenants/0002/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0003" | jq
+curl -sS "http://localhost:4000/migration/tenants/0003/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0004" | jq
+curl -sS "http://localhost:4000/migration/tenants/0004/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0005" | jq
+curl -sS "http://localhost:4000/migration/tenants/0005/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0006" | jq
+curl -sS "http://localhost:4000/migration/tenants/0006/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0007" | jq
+curl -sS "http://localhost:4000/migration/tenants/0007/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0008" | jq
+curl -sS "http://localhost:4000/migration/tenants/0008/rollback/all" | jq
 
-curl -sS "http://localhost:4000/migration/tenants/rollback/0009" | jq
+curl -sS "http://localhost:4000/migration/tenants/0009/rollback/all" | jq
 
-# Rollback tenants version + tenant
-curl -sS "http://localhost:4000/migration/tenants/rollback/0003/local" | jq
+# Rollback tenants z-order (all tenants)
+curl -sS "http://localhost:4000/migration/tenants/z-order/rollback/all" | jq
 
-# Rollback tenants z-order
-curl -sS "http://localhost:4000/migration/tenants/rollback/z-order/local" | jq
+
+# Rollback a single tenant (e.g. local) via the tenants track
+curl -sS "http://localhost:4000/migration/tenants/0003/rollback/local" | jq
+
+# Rollback tenants z-order for a single tenant
+curl -sS "http://localhost:4000/migration/tenants/z-order/rollback/local" | jq
+
+
+# Tenant-specific shortcut (not core) — execute only that tenant, not all tenants
+curl -sS "http://localhost:4000/migration/local/0000/rollback" | jq
+curl -sS "http://localhost:4000/migration/local/z-order/rollback" | jq
+
+curl -sS "http://localhost:4000/migration/abcd/0000/rollback" | jq
+curl -sS "http://localhost:4000/migration/abcd/z-order/rollback" | jq

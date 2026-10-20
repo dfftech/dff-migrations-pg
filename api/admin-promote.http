@@ -1,19 +1,20 @@
-# Promote admin version on core DB
-curl -sS "http://localhost:4000/migration/admin/promote/0000" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0001" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0002" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0003" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0004" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0005" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0006" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0007" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0008" | jq
-curl -sS "http://localhost:4000/migration/admin/promote/0009" | jq
+# Promote core version (core DB only)
+curl -sS "http://localhost:4000/migration/core/0000/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0001/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0002/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0003/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0004/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0005/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0006/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0007/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0008/promote" | jq
+curl -sS "http://localhost:4000/migration/core/0009/promote" | jq
 
+# Promote core z-order
+curl -sS "http://localhost:4000/migration/core/z-order/promote" | jq
 
+###
+GET http://localhost:4000/migration/core/z-order/promote
 
-# Promote admin version on core DB (same as above)
-curl -sS "http://localhost:4000/migration/admin/promote/0001/core" | jq
-
-# Promote admin z-order (core required)
-curl -sS "http://localhost:4000/migration/admin/promote/z-order/core" | jq
+###
+GET http://localhost:4000/migration/core/0001/promote

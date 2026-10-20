@@ -8,8 +8,3 @@ export type MigrationParams = {
   version: string;
   tenant: string;
 };
-
-export type MigrationTenantParams = {
-  track: string;
-  tenant: string;
-};

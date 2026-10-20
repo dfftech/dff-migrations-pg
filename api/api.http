@@ -1,0 +1,11 @@
+# Delete the local .migration clone and re-clone REPO_URL fresh
+curl -sS "http://localhost:4000/migration/resync" | jq
+
+###
+GET http://localhost:4000/migration/resync
+
+# Migration catalog (pulls the repo, then lists tracks/versions/actions)
+curl -sS "http://localhost:4000/migration/catalog" | jq
+
+###
+GET http://localhost:4000/migration/catalog

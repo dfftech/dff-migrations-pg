@@ -1,18 +1,14 @@
-# Rollback admin version
-curl -sS "http://localhost:4000/migration/admin/rollback/0000" | jq
+# Rollback core version (core DB only)
+curl -sS "http://localhost:4000/migration/core/0000/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0001/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0002/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0003/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0004/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0005/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0006/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0007/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0008/rollback" | jq
+curl -sS "http://localhost:4000/migration/core/0009/rollback" | jq
 
-curl -sS "http://localhost:4000/migration/admin/rollback/0001" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0002" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0003" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0004" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0005" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0006" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0007" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0008" | jq
-curl -sS "http://localhost:4000/migration/admin/rollback/0009" | jq
-
-# Rollback admin version (same as above)
-curl -sS "http://localhost:4000/migration/admin/rollback/0001/core" | jq
-
-# Rollback admin z-order (core required)
-curl -sS "http://localhost:4000/migration/admin/rollback/z-order/core" | jq
+# Rollback core z-order
+curl -sS "http://localhost:4000/migration/core/z-order/rollback" | jq

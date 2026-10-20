@@ -1,16 +1,16 @@
-import fs from "node:fs";
-import { access, mkdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import git from "isomorphic-git";
-import gitHttp from "isomorphic-git/http/node";
-import { env } from "./app-util";
+import git from 'isomorphic-git';
+import gitHttp from 'isomorphic-git/http/node';
+import fs from 'node:fs';
+import { access, mkdir, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { env } from './app-util';
 
-const BRANCH = "main";
+const BRANCH = 'main';
 const HTTP_TIMEOUT_MS = 10 * 60 * 1000;
 /** Hidden so Encore's watcher skips it (IgnoreFolder: names starting with '.'). */
-export const MIGRATION_DIR = join(process.cwd(), ".migration");
-const LEGACY_MIGRATION_DIR = join(process.cwd(), "migration");
-const SESSION_STAMP = join(MIGRATION_DIR, ".server-session");
+export const MIGRATION_DIR = join(process.cwd(), '.migration');
+const LEGACY_MIGRATION_DIR = join(process.cwd(), 'migration');
+const SESSION_STAMP = join(MIGRATION_DIR, '.server-session');
 
 const http = {
   request: (req: Parameters<typeof gitHttp.request>[0]) =>
@@ -23,8 +23,8 @@ const http = {
 function publicRepoUrl(repoUrl: string): string {
   try {
     const parsed = new URL(repoUrl);
-    parsed.username = "";
-    parsed.password = "";
+    parsed.username = '';
+    parsed.password = '';
     return parsed.toString();
   } catch {
     return repoUrl;
@@ -33,9 +33,9 @@ function publicRepoUrl(repoUrl: string): string {
 
 function onAuth(repoUrl: string, token: string) {
   const host = new URL(repoUrl).hostname;
-  if (host.includes("gitlab")) return { username: "oauth2", password: token };
-  if (host.includes("bitbucket")) return { username: "x-token-auth", password: token };
-  return { username: "x-access-token", password: token };
+  if (host.includes('gitlab')) return { username: 'oauth2', password: token };
+  if (host.includes('bitbucket')) return { username: 'x-token-auth', password: token };
+  return { username: 'x-access-token', password: token };
 }
 
 async function pathExists(dir: string): Promise<boolean> {
@@ -59,21 +59,21 @@ let clonePromise: Promise<void> | null = null;
 let pullPromise: Promise<void> | null = null;
 
 function repoAuth() {
-  const repoUrl = env("REPO_URL")?.trim();
-  const token = env("REPO_TOKEN")?.trim();
+  const repoUrl = env('REPO_URL')?.trim();
+  const token = env('REPO_TOKEN')?.trim();
   if (!repoUrl) return null;
-  if (!token) throw new Error("REPO_TOKEN is not set");
+  if (!token) throw new Error('REPO_TOKEN is not set');
   return { repoUrl, token };
 }
 
 async function overwriteFromRemote(repoUrl: string, token: string): Promise<void> {
-  console.log("[migration] fetch --force", publicRepoUrl(repoUrl), `branch=${BRANCH}`);
+  console.log('[migration] fetch --force', publicRepoUrl(repoUrl), `branch=${BRANCH}`);
   await git.fetch({
     fs,
     http,
     dir: MIGRATION_DIR,
     url: repoUrl,
-    remote: "origin",
+    remote: 'origin',
     ref: BRANCH,
     singleBranch: true,
     depth: 1,
@@ -95,7 +95,7 @@ async function overwriteFromRemote(repoUrl: string, token: string): Promise<void
     ref: BRANCH,
     force: true,
   });
-  console.log("[migration] reset --hard origin/" + BRANCH, oid.slice(0, 8));
+  console.log('[migration] reset --hard origin/' + BRANCH, oid.slice(0, 8));
 }
 
 /** Fetch origin and overwrite local .migration with remote HEAD. */
@@ -106,11 +106,11 @@ export function pull_repo(): Promise<void> {
     await clone_repo();
     const auth = repoAuth();
     if (!auth) {
-      console.warn("[migration] skip pull: REPO_URL not set");
+      console.warn('[migration] skip pull: REPO_URL not set');
       return;
     }
-    if (!(await pathExists(join(MIGRATION_DIR, ".git")))) {
-      console.warn("[migration] skip pull: clone missing");
+    if (!(await pathExists(join(MIGRATION_DIR, '.git')))) {
+      console.warn('[migration] skip pull: clone missing');
       return;
     }
     await overwriteFromRemote(auth.repoUrl, auth.token);
@@ -121,6 +121,24 @@ export function pull_repo(): Promise<void> {
   return pullPromise;
 }
 
+/** Delete the local clone entirely and clone REPO_URL fresh. */
+export async function reclone_repo(): Promise<void> {
+  // Let any in-flight clone/pull finish before touching the directory.
+  if (clonePromise) await clonePromise.catch(() => {});
+  if (pullPromise) await pullPromise.catch(() => {});
+
+  if (await pathExists(MIGRATION_DIR)) {
+    console.log('[migration] reclone: deleting existing clone', MIGRATION_DIR);
+    await rm(MIGRATION_DIR, { recursive: true, force: true });
+  }
+
+  // clone_repo() memoizes clonePromise forever once resolved — reset it so
+  // the next call actually re-clones instead of returning the stale result.
+  clonePromise = null;
+  await clone_repo();
+  console.log('[migration] reclone completed');
+}
+
 /** Clone REPO_URL (main) into ./.migration using REPO_TOKEN via isomorphic-git. */
 export function clone_repo(): Promise<void> {
   if (clonePromise) return clonePromise;
@@ -128,7 +146,7 @@ export function clone_repo(): Promise<void> {
   clonePromise = (async () => {
     const auth = repoAuth();
     if (!auth) {
-      console.warn("[migration] skip clone: REPO_URL not set");
+      console.warn('[migration] skip clone: REPO_URL not set');
       return;
     }
     const { repoUrl, token } = auth;
@@ -138,12 +156,12 @@ export function clone_repo(): Promise<void> {
     }
 
     const sessionId = serverSessionId();
-    const cloned = await pathExists(join(MIGRATION_DIR, ".git"));
+    const cloned = await pathExists(join(MIGRATION_DIR, '.git'));
     if (sessionId && cloned) {
       try {
-        const prev = fs.readFileSync(SESSION_STAMP, "utf8").trim();
+        const prev = fs.readFileSync(SESSION_STAMP, 'utf8').trim();
         if (prev === sessionId) {
-          console.log("[migration] hot reload, keep existing clone");
+          console.log('[migration] hot reload, keep existing clone');
           return;
         }
       } catch {
@@ -152,21 +170,15 @@ export function clone_repo(): Promise<void> {
     }
 
     if (await pathExists(MIGRATION_DIR)) {
-      console.log("[migration] server start, deleting existing clone");
+      console.log('[migration] server start, deleting existing clone');
       await rm(MIGRATION_DIR, { recursive: true, force: true });
     }
 
-    console.log(
-      "[migration] cloning",
-      publicRepoUrl(repoUrl),
-      `branch=${BRANCH}`,
-      "into",
-      MIGRATION_DIR
-    );
+    console.log('[migration] cloning', publicRepoUrl(repoUrl), `branch=${BRANCH}`, 'into', MIGRATION_DIR);
 
     await mkdir(MIGRATION_DIR, { recursive: true });
 
-    let lastPhase = "";
+    let lastPhase = '';
     await git.clone({
       fs,
       http,
@@ -184,10 +196,10 @@ export function clone_repo(): Promise<void> {
     });
 
     if (sessionId) {
-      await writeFile(SESSION_STAMP, sessionId, "utf8");
+      await writeFile(SESSION_STAMP, sessionId, 'utf8');
     }
 
-    console.log("[migration] clone completed");
+    console.log('[migration] clone completed');
   })();
 
   return clonePromise;
